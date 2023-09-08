@@ -1,15 +1,11 @@
 
 import demos.classes.Animation
 import kotlinx.coroutines.DelicateCoroutinesApi
-import org.openrndr.MouseEvent
-import org.openrndr.MouseEvents
-import org.openrndr.animatable.Animatable
-import org.openrndr.animatable.easing.Easing
 import org.openrndr.application
 import org.openrndr.color.ColorRGBa
-import org.openrndr.draw.*
-import org.openrndr.extra.color.presets.FLORAL_WHITE
-import org.openrndr.extra.color.presets.GHOST_WHITE
+import org.openrndr.draw.FontImageMap
+import org.openrndr.draw.FontMap
+import org.openrndr.draw.loadFont
 import org.openrndr.extra.color.presets.WHITE_SMOKE
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
@@ -17,14 +13,8 @@ import org.openrndr.extra.shapes.RoundedRectangle
 import org.openrndr.extra.shapes.grid
 import org.openrndr.extra.shapes.roundedRectangle
 import org.openrndr.math.IntVector2
-import org.openrndr.math.Vector2
-import org.openrndr.math.mix
 import org.openrndr.shape.Rectangle
-import org.openrndr.writer
-import java.awt.SystemColor.window
 import java.io.File
-import javax.swing.plaf.basic.BasicTreeUI.MouseHandler
-import kotlin.system.measureTimeMillis
 
 
 @OptIn(DelicateCoroutinesApi::class)
@@ -40,6 +30,42 @@ fun main() = application {
     }
 
     oliveProgram {
+        var lastMouseState = false
+        var currentMouseState: Boolean
+        var mouseClick = false
+        var mouseDrag = false
+        var mouseReleased = false
+
+        mouse.dragged.listen{
+            println("mouseDrag")
+            if (!mouseReleased) {
+                mouseDrag = true
+            }
+        }
+        mouse.exited.listen{
+            println("mouseExit")
+            mouseDrag = false
+        }
+        mouse.buttonUp.listen {
+            println("mouseUp")
+            mouseDrag = false
+            mouseReleased = true
+            currentMouseState = false
+            if(currentMouseState != lastMouseState
+            ){
+                mouseClick = false
+                lastMouseState = currentMouseState
+            }
+        }
+        mouse.buttonDown.listen {
+            currentMouseState = true
+            if(currentMouseState != lastMouseState
+            ){
+                mouseClick = true
+                lastMouseState = currentMouseState
+            }
+            mouseReleased = false
+        }
         var palette = listOf(
             ColorRGBa.fromHex(0xF1934B),
             ColorRGBa.fromHex(0x0E8847),
@@ -143,9 +169,30 @@ fun main() = application {
             val yPos = rectRef.y + innerMarginY
             val w = rectRef.width
             val h = rectRef.height - innerMarginY*2
+            var isActive: Boolean = false
+            var fillCol = ColorRGBa.BLACK
+            var toggleOnOff: Boolean = false
+
+            fun isHovering(mouseX: Double, mouseY: Double): Boolean {
+                return mouseX >= xPos && mouseX <= xPos + w &&
+                        mouseY >= yPos && mouseY <= yPos + h
+            }
+
+            fun toggle() {
+                isActive = !isActive
+            }
+
+            fun checkButton(mouseClick: Boolean) {
+                if (this.isHovering(mouse.position.x, mouse.position.y) && mouseClick) {
+                    toggle()
+                }
+            }
+
             fun display(){
-                drawer.fill = ColorRGBa.BLACK
                 drawer.stroke = ColorRGBa.WHITE
+                if(isActive) fillCol = ColorRGBa.GREEN
+                else fillCol = ColorRGBa.BLACK
+                drawer.fill = fillCol
                 drawer.roundedRectangle(xPos, yPos, w, h, bRad)
             }
         }
@@ -167,9 +214,9 @@ fun main() = application {
             }
         }
 
-        var sliderArr =  mutableListOf<CSlider>()
-        var buttonArr =  mutableListOf<CButton>()
-        var toggleArr =  mutableListOf<CToggle>()
+        val sliderArr =  mutableListOf<CSlider>()
+        val buttonArr =  mutableListOf<CButton>()
+        val toggleArr =  mutableListOf<CToggle>()
 
         sliderGrid.forEachIndexed{ i, e->
             sliderArr.add(CSlider(sliderGrid[i]))
@@ -181,19 +228,7 @@ fun main() = application {
             toggleArr.add(CToggle(toggleGrid[i]))
         }
 
-        var mouseClick = false
-
-        mouse.buttonDown.listen {
-            mouseClick = true
-        }
-        mouse.buttonUp.listen {
-            mouseClick = false
-        }
-
         extend {
-
-            println(mouseClick)
-
             animArr.forEachIndexed { i, a ->
                 a((randNums[i] * 0.3 + frameCount * 0.02) % loopDelay)
             }
@@ -216,27 +251,25 @@ fun main() = application {
             drawer.roundedRectangle(guiRect)
             drawer.roundedRectangle(canvRect)
             drawer.stroke = ColorRGBa.BLACK
-            guiGrid.forEach{ r->
-//                drawer.rectangle(r)
-            }
-
-//            sliderGrid.forEach { e->
-//                drawer.rectangle( e )
-//            }
 
             sliderArr.forEach{ e->
                 e.display()
                 if (e.isHovering(mouse.position.x, mouse.position.y) && mouseClick) {
-                    e.updateSlider(mouse.position.x, mouse.buttonUp.postpone)
+                    e.updateSlider(mouse.position.x, mouseClick)
                 }
             }
+
+
             buttonArr.forEach{ e->
                 e.display()
+                e.checkButton(mouseClick)
+            }
+            if (mouseClick) {
+                mouseClick = false
             }
             toggleArr.forEach{ e->
                 e.display()
             }
-
         }
     }
 }
