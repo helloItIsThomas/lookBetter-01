@@ -30,41 +30,28 @@ fun main() = application {
     }
 
     oliveProgram {
-        var lastMouseState = false
-        var currentMouseState: Boolean
+//        var lastMouseState = false
+//        var currentMouseState: Boolean
         var mouseClick = false
-        var mouseDrag = false
-        var mouseReleased = false
+//        var mouseDrag = false
+//        var mouseReleased = false
+        var mouseState = "up"
 
-        mouse.dragged.listen{
-            println("mouseDrag")
-            if (!mouseReleased) {
-                mouseDrag = true
-            }
+        mouse.dragged.listen {
+            mouseState = "drag"
         }
         mouse.exited.listen{
-            println("mouseExit")
-            mouseDrag = false
+            mouseState = "up"
         }
         mouse.buttonUp.listen {
-            println("mouseUp")
-            mouseDrag = false
-            mouseReleased = true
-            currentMouseState = false
-            if(currentMouseState != lastMouseState
-            ){
-                mouseClick = false
-                lastMouseState = currentMouseState
-            }
+            mouseState = "up"
+            mouseClick = true
         }
         mouse.buttonDown.listen {
-            currentMouseState = true
-            if(currentMouseState != lastMouseState
-            ){
-                mouseClick = true
-                lastMouseState = currentMouseState
-            }
-            mouseReleased = false
+            mouseState = "down"
+        }
+        mouse.moved.listen{
+            mouseState = "move"
         }
         var palette = listOf(
             ColorRGBa.fromHex(0xF1934B),
@@ -146,9 +133,9 @@ fun main() = application {
                         mouseY >= yPos && mouseY <= yPos + h
             }
             fun updateSlider(mouseX: Double, mousePressed: Boolean) {
-                if (isHovering(mouseX, yPos + h / 2) && mousePressed) {
+//                if (isHovering(mouseX, yPos + h / 2) && mouseDrag) {
                     sliderX = mouseX.coerceIn(xPos + sliderRad, xPos + w - sliderRad)
-                }
+//                }
             }
 
             fun display(){
@@ -184,6 +171,7 @@ fun main() = application {
 
             fun checkButton(mouseClick: Boolean) {
                 if (this.isHovering(mouse.position.x, mouse.position.y) && mouseClick) {
+//                if (this.isHovering(mouse.position.x, mouse.position.y) && mouseState == "down") {
                     toggle()
                 }
             }
@@ -254,22 +242,19 @@ fun main() = application {
 
             sliderArr.forEach{ e->
                 e.display()
-                if (e.isHovering(mouse.position.x, mouse.position.y) && mouseClick) {
+                if (e.isHovering(mouse.position.x, mouse.position.y) && (mouseState == "drag" || mouseClick)) {
                     e.updateSlider(mouse.position.x, mouseClick)
                 }
             }
-
-
             buttonArr.forEach{ e->
                 e.display()
                 e.checkButton(mouseClick)
             }
-            if (mouseClick) {
-                mouseClick = false
-            }
             toggleArr.forEach{ e->
                 e.display()
             }
+
+            if (mouseClick) mouseClick = false
         }
     }
 }
