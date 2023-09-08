@@ -79,6 +79,7 @@ fun main() = application {
             drawer.bounds.height - 2 * masterGutter,
             radius / 2
         )
+
         val guiRect = RoundedRectangle(
             masterGutter,
             masterGutter,
@@ -112,13 +113,26 @@ fun main() = application {
             val w = rectRef.width
             val h = rectRef.height - innerMarginY
             private val sliderRad = h/2
+            private var sliderX = xPos + (sliderRad * 0.5)
+
+            fun isHovering(mouseX: Double, mouseY: Double): Boolean {
+                return mouseX >= xPos && mouseX <= xPos + w &&
+                        mouseY >= yPos && mouseY <= yPos + h
+            }
+            fun updateSlider(mouseX: Double, mousePressed: Boolean) {
+                if (isHovering(mouseX, yPos + h / 2) && mousePressed) {
+                    sliderX = mouseX.coerceIn(xPos + sliderRad, xPos + w - sliderRad)
+                }
+            }
+
             fun display(){
                 drawer.fill = ColorRGBa.BLACK
                 drawer.stroke = ColorRGBa.WHITE
                 drawer.roundedRectangle(xPos, yPos, w, h, sliderRad)
                 drawer.fill = ColorRGBa.WHITE
                 drawer.stroke = ColorRGBa.BLACK
-                drawer.circle(xPos + (sliderRad*0.5), yPos + (h/2), sliderRad)
+                drawer.circle(sliderX, yPos + (h / 2), sliderRad)
+//                drawer.circle(xPos + (sliderRad*0.5), yPos + (h/2), sliderRad)
             }
         }
         class CButton(rectRef: Rectangle){
@@ -167,8 +181,19 @@ fun main() = application {
             toggleArr.add(CToggle(toggleGrid[i]))
         }
 
+        var mouseClick = false
+
+        mouse.buttonDown.listen {
+            mouseClick = true
+        }
+        mouse.buttonUp.listen {
+            mouseClick = false
+        }
 
         extend {
+
+            println(mouseClick)
+
             animArr.forEachIndexed { i, a ->
                 a((randNums[i] * 0.3 + frameCount * 0.02) % loopDelay)
             }
@@ -201,6 +226,9 @@ fun main() = application {
 
             sliderArr.forEach{ e->
                 e.display()
+                if (e.isHovering(mouse.position.x, mouse.position.y) && mouseClick) {
+                    e.updateSlider(mouse.position.x, mouse.buttonUp.postpone)
+                }
             }
             buttonArr.forEach{ e->
                 e.display()
