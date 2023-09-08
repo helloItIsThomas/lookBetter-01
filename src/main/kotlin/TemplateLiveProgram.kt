@@ -52,8 +52,6 @@ fun main() = application {
             colorBuffer()
         }
 
-
-
         extend {
             animArr.forEachIndexed { i, a ->
                 a((randNums[i] * 0.3 + frameCount * 0.02) % loopDelay)
