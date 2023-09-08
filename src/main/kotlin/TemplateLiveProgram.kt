@@ -36,6 +36,7 @@ fun main() = application {
         windowAlwaysOnTop = true
         position = IntVector2(1170,110)
         windowTransparent = true
+//        windowResizable = true
     }
 
     oliveProgram {
@@ -50,8 +51,9 @@ fun main() = application {
         val loopDelay = 3.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
-        val scale: DoubleArray = typeScale(3, 100.0, 3)
+        val scale: DoubleArray = typeScale(3, 10.0, 3)
         val typeFace: Pair<List<FontMap>, List<FontImageMap>> = defaultTypeSetup(scale, listOf("reg", "reg", "bold"))
+        val font = loadFont("data/fonts/default.otf", 13.0)
         var rad = 10.0
         val animArr = mutableListOf<Animation>()
         val randNums = mutableListOf<Double>()
@@ -98,7 +100,73 @@ fun main() = application {
             guiRect.height
         ).grid(colCount, rowCount, marginX, marginY, gutterX, gutterY).flatten()
 
-        val subGrid = guiGrid[0].grid(colCount, rowCount, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        val sliderGrid = guiGrid[0].grid(colCount, rowCount, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        val buttonGrid = guiGrid[1].grid(1, 2, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        val toggleGrid = guiGrid[2].grid(1, 3, marginX*2, marginY*2, gutterX, gutterY).flatten()
+
+        class CSlider(rectRef: Rectangle){
+            val innerMarginX = 5.0
+            val innerMarginY = 2.5
+            val xPos = rectRef.x
+            val yPos = rectRef.y + innerMarginY
+            val w = rectRef.width
+            val h = rectRef.height - innerMarginY
+            private val sliderRad = h/2
+            fun display(){
+                drawer.fill = ColorRGBa.BLACK
+                drawer.stroke = ColorRGBa.WHITE
+                drawer.roundedRectangle(xPos, yPos, w, h, sliderRad)
+                drawer.fill = ColorRGBa.WHITE
+                drawer.stroke = ColorRGBa.BLACK
+                drawer.circle(xPos + (sliderRad*0.5), yPos + (h/2), sliderRad)
+            }
+        }
+        class CButton(rectRef: Rectangle){
+            val innerMarginX = 5.0
+            val innerMarginY = 2.5
+            val bRad = 5.0
+            val xPos = rectRef.x
+            val yPos = rectRef.y + innerMarginY
+            val w = rectRef.width
+            val h = rectRef.height - innerMarginY*2
+            fun display(){
+                drawer.fill = ColorRGBa.BLACK
+                drawer.stroke = ColorRGBa.WHITE
+                drawer.roundedRectangle(xPos, yPos, w, h, bRad)
+            }
+        }
+        class CToggle(rectRef: Rectangle){
+            val innerMarginX = 5.0
+            val innerMarginY = 2.5
+            val bRad = 5.0
+            val xPos = rectRef.x
+            val yPos = rectRef.y + innerMarginY
+            val w = rectRef.width
+            val h = rectRef.height - innerMarginY*2
+            fun display(){
+                drawer.fill = ColorRGBa.BLACK
+                drawer.stroke = ColorRGBa.WHITE
+                drawer.roundedRectangle(xPos, yPos, w, h, bRad)
+                drawer.fontMap = font
+                drawer.fill = ColorRGBa.WHITE
+//                drawer.text("TOGGLE", xPos + innerMarginX, yPos + innerMarginY + 10.0)
+            }
+        }
+
+        var sliderArr =  mutableListOf<CSlider>()
+        var buttonArr =  mutableListOf<CButton>()
+        var toggleArr =  mutableListOf<CToggle>()
+
+        sliderGrid.forEachIndexed{ i, e->
+            sliderArr.add(CSlider(sliderGrid[i]))
+        }
+        buttonGrid.forEachIndexed{ i, e->
+            buttonArr.add(CButton(buttonGrid[i]))
+        }
+        toggleGrid.forEachIndexed{ i, e->
+            toggleArr.add(CToggle(toggleGrid[i]))
+        }
+
 
         extend {
             animArr.forEachIndexed { i, a ->
@@ -124,12 +192,23 @@ fun main() = application {
             drawer.roundedRectangle(canvRect)
             drawer.stroke = ColorRGBa.BLACK
             guiGrid.forEach{ r->
-                drawer.rectangle(r)
+//                drawer.rectangle(r)
             }
 
-            subGrid.forEach { e->
-                drawer.rectangle( e )
+//            sliderGrid.forEach { e->
+//                drawer.rectangle( e )
+//            }
+
+            sliderArr.forEach{ e->
+                e.display()
             }
+            buttonArr.forEach{ e->
+                e.display()
+            }
+            toggleArr.forEach{ e->
+                e.display()
+            }
+
         }
     }
 }
