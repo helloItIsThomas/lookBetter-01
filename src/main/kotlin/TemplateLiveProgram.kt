@@ -22,21 +22,16 @@ fun main() = application {
     configure {
         width = 608
         height = 342
-        hideWindowDecorations = true
+//        hideWindowDecorations = true
         windowAlwaysOnTop = true
         position = IntVector2(1170,110)
         windowTransparent = true
-//        windowResizable = true
+        windowResizable = true
     }
 
     oliveProgram {
-//        var lastMouseState = false
-//        var currentMouseState: Boolean
         var mouseClick = false
-//        var mouseDrag = false
-//        var mouseReleased = false
         var mouseState = "up"
-
         mouse.dragged.listen {
             mouseState = "drag"
         }
@@ -83,23 +78,24 @@ fun main() = application {
         val masterGutter = 10.0
         val lineThickness = 2.0
 
-        val adjustableWidth = width / 4.0 // mouse.position.x.coerceIn(masterGutter, width.toDouble() - (masterGutter*4)) // Modify this to change the first rectangle's width
-        val remainingWidth = drawer.bounds.width - adjustableWidth - 3 * masterGutter
-        val canvRect = RoundedRectangle(
+
+        var adjustableWidth = width / 4.0 // mouse.position.x.coerceIn(masterGutter, width.toDouble() - (masterGutter*4)) // Modify this to change the first rectangle's width
+        var remainingWidth = drawer.bounds.width - adjustableWidth - 3 * masterGutter
+        var canvRect = RoundedRectangle(
             2 * masterGutter + adjustableWidth,
             masterGutter,
             remainingWidth,
             drawer.bounds.height - 2 * masterGutter,
             radius / 2
-        )
+            )
 
-        val guiRect = RoundedRectangle(
+        var guiRect = RoundedRectangle(
             masterGutter,
             masterGutter,
             adjustableWidth,
             drawer.bounds.height - 2 * masterGutter,
             radius / 2
-        )
+            )
 
         val colCount = 1
         val rowCount = 4
@@ -112,11 +108,11 @@ fun main() = application {
             guiRect.corner,
             guiRect.width,
             guiRect.height
-        ).grid(colCount, rowCount, marginX, marginY, gutterX, gutterY).flatten()
+            ).grid(colCount, rowCount, marginX, marginY, gutterX, gutterY).flatten()
 
-        val sliderGrid = guiGrid[0].grid(colCount, rowCount, marginX*2, marginY*2, gutterX, gutterY).flatten()
-        val buttonGrid = guiGrid[1].grid(1, 2, marginX*2, marginY*2, gutterX, gutterY).flatten()
-        val toggleGrid = guiGrid[2].grid(1, 3, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        var sliderGrid = guiGrid[0].grid(colCount, rowCount, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        var buttonGrid = guiGrid[1].grid(1, 2, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        var toggleGrid = guiGrid[2].grid(1, 3, marginX*2, marginY*2, gutterX, gutterY).flatten()
 
         class CSlider(rectRef: Rectangle){
             val innerMarginX = 5.0
@@ -202,21 +198,62 @@ fun main() = application {
             }
         }
 
-        val sliderArr =  mutableListOf<CSlider>()
-        val buttonArr =  mutableListOf<CButton>()
-        val toggleArr =  mutableListOf<CToggle>()
+        var sliderArr =  mutableListOf<CSlider>()
+        var buttonArr =  mutableListOf<CButton>()
+        var toggleArr =  mutableListOf<CToggle>()
 
-        sliderGrid.forEachIndexed{ i, e->
-            sliderArr.add(CSlider(sliderGrid[i]))
-        }
-        buttonGrid.forEachIndexed{ i, e->
-            buttonArr.add(CButton(buttonGrid[i]))
-        }
-        toggleGrid.forEachIndexed{ i, e->
-            toggleArr.add(CToggle(toggleGrid[i]))
-        }
+        var prevWindowW = 0.0
+        var currentWindowW: Double
 
+        fun resizeWindow(){
+            adjustableWidth = width / 4.0 // mouse.position.x.coerceIn(masterGutter, width.toDouble() - (masterGutter*4)) // Modify this to change the first rectangle's width
+            remainingWidth = drawer.bounds.width - adjustableWidth - 3 * masterGutter
+
+            canvRect = RoundedRectangle(
+                2 * masterGutter + adjustableWidth,
+                masterGutter,
+                remainingWidth,
+                drawer.bounds.height - 2 * masterGutter,
+                radius / 2
+            )
+            guiRect = RoundedRectangle(
+                masterGutter,
+                masterGutter,
+                adjustableWidth,
+                drawer.bounds.height - 2 * masterGutter,
+                radius / 2
+            )
+            guiGrid = Rectangle(
+                guiRect.corner,
+                guiRect.width,
+                guiRect.height
+            ).grid(colCount, rowCount, marginX, marginY, gutterX, gutterY).flatten()
+            sliderGrid = guiGrid[0].grid(colCount, rowCount, marginX*2, marginY*2, gutterX, gutterY).flatten()
+            buttonGrid = guiGrid[1].grid(1, 2, marginX*2, marginY*2, gutterX, gutterY).flatten()
+            toggleGrid = guiGrid[2].grid(1, 3, marginX*2, marginY*2, gutterX, gutterY).flatten()
+
+            sliderArr.clear()
+            buttonArr.clear()
+            toggleArr.clear()
+
+            sliderGrid.forEachIndexed{ i, e->
+                sliderArr.add(CSlider(sliderGrid[i]))
+            }
+            buttonGrid.forEachIndexed{ i, e->
+                buttonArr.add(CButton(buttonGrid[i]))
+            }
+            toggleGrid.forEachIndexed{ i, e->
+                toggleArr.add(CToggle(toggleGrid[i]))
+            }
+        }
+        resizeWindow()
         extend {
+            currentWindowW = program.width.toDouble()
+            if(prevWindowW != currentWindowW){
+//                resizeWindow()
+                println("resized")
+                prevWindowW = currentWindowW
+            }
             animArr.forEachIndexed { i, a ->
                 a((randNums[i] * 0.3 + frameCount * 0.02) % loopDelay)
             }
