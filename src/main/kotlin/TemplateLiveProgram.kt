@@ -5,7 +5,9 @@ import org.openrndr.application
 import org.openrndr.color.ColorRGBa
 import org.openrndr.draw.FontImageMap
 import org.openrndr.draw.FontMap
+import org.openrndr.draw.isolated
 import org.openrndr.draw.loadFont
+import org.openrndr.extra.color.presets.DARK_GREY
 import org.openrndr.extra.color.presets.WHITE_SMOKE
 import org.openrndr.extra.noise.random
 import org.openrndr.extra.olive.oliveProgram
@@ -13,6 +15,7 @@ import org.openrndr.extra.shapes.RoundedRectangle
 import org.openrndr.extra.shapes.grid
 import org.openrndr.extra.shapes.roundedRectangle
 import org.openrndr.math.IntVector2
+import org.openrndr.math.map
 import org.openrndr.shape.Rectangle
 import java.io.File
 
@@ -59,7 +62,7 @@ fun main() = application {
         val loopDelay = 3.0
         val message = "hello"
         animation.loadFromJson(File("data/keyframes/keyframes-0.json"))
-        val scale: DoubleArray = typeScale(3, 10.0, 3)
+        val scale: DoubleArray = typeScale(10, 10.0, 5)
         val typeFace: Pair<List<FontMap>, List<FontImageMap>> = defaultTypeSetup(scale, listOf("reg", "reg", "bold"))
         val font = loadFont("data/fonts/default.otf", 13.0)
         var rad = 10.0
@@ -104,15 +107,10 @@ fun main() = application {
         val gutterX = 2.0
         val gutterY = 2.0
 
-        var guiGrid = Rectangle(
-            guiRect.corner,
-            guiRect.width,
-            guiRect.height
-            ).grid(colCount, rowCount, marginX, marginY, gutterX, gutterY).flatten()
-
-        var sliderGrid = guiGrid[0].grid(colCount, rowCount, marginX*2, marginY*2, gutterX, gutterY).flatten()
-        var buttonGrid = guiGrid[1].grid(1, 2, marginX*2, marginY*2, gutterX, gutterY).flatten()
-        var toggleGrid = guiGrid[2].grid(1, 3, marginX*2, marginY*2, gutterX, gutterY).flatten()
+        var guiGrid: List<Rectangle>
+        var sliderGrid: List<Rectangle>
+        var buttonGrid: List<Rectangle>
+        var toggleGrid: List<Rectangle>
 
         class CSlider(rectRef: Rectangle){
             val innerMarginX = 5.0
@@ -120,9 +118,10 @@ fun main() = application {
             val xPos = rectRef.x
             val yPos = rectRef.y + innerMarginY
             val w = rectRef.width
-            val h = rectRef.height - innerMarginY
+            val h = 10.0 // rectRef.height - innerMarginY
             private val sliderRad = h/2
             private var sliderX = xPos + (sliderRad * 0.5)
+            var sliderVal: Double = 0.0
 
             fun isHovering(mouseX: Double, mouseY: Double): Boolean {
                 return mouseX >= xPos && mouseX <= xPos + w &&
@@ -131,6 +130,7 @@ fun main() = application {
             fun updateSlider(mouseX: Double, mousePressed: Boolean) {
 //                if (isHovering(mouseX, yPos + h / 2) && mouseDrag) {
                     sliderX = mouseX.coerceIn(xPos + sliderRad, xPos + w - sliderRad)
+                    sliderVal = sliderX.map(0.0, xPos + w - sliderRad, 0.0, 1.0)
 //                }
             }
 
@@ -151,7 +151,7 @@ fun main() = application {
             val xPos = rectRef.x
             val yPos = rectRef.y + innerMarginY
             val w = rectRef.width
-            val h = rectRef.height - innerMarginY*2
+            val h = 30.0 - innerMarginY*2
             var isActive: Boolean = false
             var fillCol = ColorRGBa.BLACK
             var toggleOnOff: Boolean = false
@@ -167,16 +167,15 @@ fun main() = application {
 
             fun checkButton(mouseClick: Boolean) {
                 if (this.isHovering(mouse.position.x, mouse.position.y) && mouseClick) {
-//                if (this.isHovering(mouse.position.x, mouse.position.y) && mouseState == "down") {
                     toggle()
                 }
             }
 
             fun display(){
-                drawer.stroke = ColorRGBa.WHITE
-                if(isActive) fillCol = ColorRGBa.GREEN
-                else fillCol = ColorRGBa.BLACK
+                if(isActive) fillCol = ColorRGBa.DARK_GREY
+                else fillCol = ColorRGBa.WHITE
                 drawer.fill = fillCol
+                drawer.stroke = ColorRGBa.BLACK
                 drawer.roundedRectangle(xPos, yPos, w, h, bRad)
             }
         }
@@ -203,7 +202,9 @@ fun main() = application {
         var toggleArr =  mutableListOf<CToggle>()
 
         var prevWindowW = 0.0
+        var prevWindowH = 0.0
         var currentWindowW: Double
+        var currentWindowH: Double
 
         fun resizeWindow(){
             adjustableWidth = width / 4.0 // mouse.position.x.coerceIn(masterGutter, width.toDouble() - (masterGutter*4)) // Modify this to change the first rectangle's width
@@ -249,10 +250,12 @@ fun main() = application {
         resizeWindow()
         extend {
             currentWindowW = program.width.toDouble()
-            if(prevWindowW != currentWindowW){
-//                resizeWindow()
+            currentWindowH = program.height.toDouble()
+            if(prevWindowW != currentWindowW || prevWindowH != currentWindowH){
+                resizeWindow()
                 println("resized")
                 prevWindowW = currentWindowW
+                prevWindowH = currentWindowH
             }
             animArr.forEachIndexed { i, a ->
                 a((randNums[i] * 0.3 + frameCount * 0.02) % loopDelay)
@@ -275,6 +278,7 @@ fun main() = application {
             drawer.fill = guiFill
             drawer.roundedRectangle(guiRect)
             drawer.roundedRectangle(canvRect)
+
             drawer.stroke = ColorRGBa.BLACK
 
             sliderArr.forEach{ e->
@@ -291,6 +295,24 @@ fun main() = application {
                 e.display()
             }
 
+            drawer.isolated {
+//                drawer.fill = ColorRGBa.BLACK
+                drawer.fontMap = typeFace.first[5]
+                for(n in 0.. (sliderArr[0].sliderVal * 200.0).toInt()){
+                    drawer.fill = ColorRGBa(
+                        (sliderArr[1].sliderVal * ((n/200.0) * 1.0)),
+                        (sliderArr[1].sliderVal * ((n/200.0) * 1.0)),
+                        (sliderArr[1].sliderVal * ((n/200.0) * 1.0))
+                    )
+                    drawer.text("DIAMONDDOGS",
+                        (guiRect.width + marginX*10.0),
+                        (marginY*20.0) + (((n*1.0) + frameCount*0.5)
+//                                +(animArr[0].pathSlider * 8.0)
+                                % (height - marginY*25.0)
+                                )
+                    )
+                }
+            }
             if (mouseClick) mouseClick = false
         }
     }
